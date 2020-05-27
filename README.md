@@ -39,7 +39,7 @@ linux下，可以通过设置socket使其变为non-blocking。当对一个non-bl
 此时我们应注意到，当kernel数据准备好并收到用户进程的system call时，在kernel拷贝数据到用户内存的这段时间里，用户进程是阻塞的，因为没有立刻收到kernel的返回结果。直到kernel数据拷贝完毕并返回OK，用户进程解除block重新运行。
 
 ### - I/O Multiplexing Model
-IO多路复用。这个词可能比较陌生，尝听闻Netty的NIO模型等等。首先说说Linux API提供的I/O复用方式：select、poll和epoll。
+IO多路复用。这个词可能比较陌生，常听闻Netty的NIO模型等等。首先说说Linux API提供的I/O复用方式：select、poll和epoll。
 |select|poll|epoll|
 |---|---|---|---|
 |操作方式|遍历|遍历|回调|
@@ -75,7 +75,7 @@ IO多路复用。这个词可能比较陌生，尝听闻Netty的NIO模型等等�
 ---
 综上，对各个I/O Model的比较如图所示：
 ![Comparison](.picture/Comparison.png)
-至此，经过上面的介绍，会发现non-blocking IO和asynchronous IO的区别还是较为明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但需要进程主动check，且当数据准备完毕后，也需要进程主动调用recvfrom并等待kernel将数据拷贝至用户内存完成。
+至此，经过上面的介绍，我们会发现non-blocking IO和asynchronous IO的区别还是较为明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但需要进程主动check，且当数据准备完毕后，也需要进程主动调用recvfrom并等待kernel将数据拷贝至用户内存完成。
 而asynchronous IO则完全不同，它就像是用户进程完全将IO操作任务交给了他人（kernel）完成，他人完成后发信号通知就行。用户进程不需要去检查IO操作的状态，也不需要等待kernel拷贝数据。
 
 ## 二、Java中的网络IO模型
