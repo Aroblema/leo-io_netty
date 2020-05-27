@@ -74,7 +74,9 @@ IO多路复用。这个词可能比较陌生，尝听闻Netty的NIO模型等等�
 对于asynchronous I/O，当进程发起IO操作之后，就直接收到返回再也不理睬了，该干嘛干嘛直到kernel发送一个信号告知进程IO操作完成。**整个过程中，进程完全没有被block**。
 ---
 综上，对各个I/O Model的比较如图所示：
-![]()
+![Comparison](.picture/Comparison.png)
+至此，经过上面的介绍，会发现non-blocking IO和asynchronous IO的区别还是较为明显的。在non-blocking IO中，虽然进程大部分时间都不会被block，但需要进程主动check，且当数据准备完毕后，也需要进程主动调用recvfrom并等待kernel将数据拷贝至用户内存完成。
+而asynchronous IO则完全不同，它就像是用户进程完全将IO操作任务交给了他人（kernel）完成，他人完成后发信号通知就行。用户进程不需要去检查IO操作的状态，也不需要等待kernel拷贝数据。
 
 ## 二、Java中的网络IO模型
 == *以下主要讲述Java中的网络IO模型* ==
