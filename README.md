@@ -108,14 +108,39 @@ IO多路复用模型，服务实现模式为一个线程可以处理多个请求
 **应用场景：**
 NIO方式适用于连接数目多且连接较短（轻操作）的架构，如聊天服务器、弹幕系统、服务间通讯等。编程比较复杂，jdk1.4开始支持
 
+**NIO有三大核心组件：Channel(通道)、Buffer(缓冲区)、Selector(选择器)**
+![MIO-02](.picture/MIO-02.png)
+- channel类似于流，每个channel对应一个buffer缓冲区，buffer底层是数组
+- channel会注册到selector上，由selector根据channel读写事件的发生将其交由某个空闲的线程处理
+- selector可以对应一个或多个线程
+- NIO的buffer和channel都是即可以读也可以写
+
 **代码见：**
 ```
 com.leo.nio.NIOClient
 com.leo.nio.NIOServer
 ```
-**NIO有三大核心组件：Channel(通道)、Buffer(缓冲区)、Selector(选择器)**
-- Channel
-- Buffer
-- Selector
+
+**NIOServer端流程分析：**
+![MIO-03](.picture/MIO-03.png)
+1. 创建一个ServerSocketChannel和Selector，并将ServerSocketChannel注册到Selector上
+2. Selector通过select()方法监听channel事件，当客户端连接时，Selector监听到连接事件，获取到ServerSocketChannel注册时绑定的SelectionKey
+3. SelectionKey通过channel()方法可以获取绑定的ServerSocketChannel
+4. ServerSocketChannel通过accept()方法得到SocketChannel
+5. 将SocketChannel注册到Selector上，关心read事件
+6. 注册后返回一个SelectionKey，会和该SocketChannel关联
+7. Selector继续通过select()方法监听channel事件，当客户端发送数据给服务端，Selector监听到read事件，获取到SocketChannel注册时绑定的SelectionKey
+8. SelectionKey通过channel()方法可以获取绑定的SocketChannel
+9. 将SocketChannel里的数据读取出来
+10. 通过SocketChannel将服务端数据写回客户端
+
+**总结：**
+NIO模型的Selector就像一个大总管，负责监听各种IO事件，然后转交给后端线程去处理
+
+**NIO相对BIO的非阻塞体现就在：BIO的后端线程需要阻塞等待客户端写数据（read方法），如果客户端连接一直不写数据线程就阻塞了。而NIO把等待客户端操作的事情交给了大总管Selector，Selector负责轮询所有已注册的客户端，监听到事件发生了才转交给后端线程处理，后端线程不需要做任何的阻塞等待，直接处理客户端事件的数据即可，处理完马上结束或返回线程池供其他客户端事件继续使用。需要注意的是channel的读写是非阻塞的。**
+
+---
+- ***Redis就是典型的NIO线程模型，Selector负责收集所有的连接的事件并转交给后端线程，线程连续执行所有事件命令并将结果写回客户端***
+
 
 ### - AIO(NIO 2.0)
