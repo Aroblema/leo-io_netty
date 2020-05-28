@@ -46,6 +46,7 @@ IO多路复用。这个词可能比较陌生，常听闻Netty的NIO模型等等�
 |底层实现|数组|数组|哈希表|
 |IO效率|每次调用都进行线性遍历，时间复杂度O(n)|每次调用都进行线性遍历，时间复杂度O(n)|事件通知方式，每当有IO事件就绪，系统注册的回调函数就会被调用，时间复杂度O(1)|
 |最大连接|有上限|无上限|无上限|
+
 这种IO方式也被称为event driven IO。它们的好处在于单个process就可以同时处理多个网络连接的IO，基本原理就是select/poll/epoll这个function会不断轮询所负责的所有socket，当某个socket有数据到达了就通知用户进程。流程如图：
 ![I/O Multiplexing](.picture/MultiplexingIO.png)
 当用户进程调用了select，那么整个进程会被block，同时kernel会"监视"select负责的所有socket，当任何一个socket中的数据准备好了，select就会返回。这个时候用户进程再调用read操作，等待kernel将数据拷贝到用户进程。
