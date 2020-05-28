@@ -32,7 +32,7 @@ IO，无非涉及两个参与方，一个输入，一个输出。然而根据参
 
 ### - Nonblocking I/O Model
 linux下，可以通过设置socket使其变为non-blocking。当对一个non-blocking socket执行读操作时，流程如下：
-![NonBIO](.picture/NonBIO-01.png)
+![NonBIO](.picture/NonBIO.png)
 从图中可以看出，当用户进程发出read操作时，如果kernel中的数据还没准备好，那么它并不会block用户进程，而是立刻返回一个error。从用户进程的角度来说，它发起一次read操作后并不需要等待，而是马上得到了一个结果。
 用户进程判断结果是error时，它就知道数据还没有准备好，于是它可以再次发送read操作。一旦kernel中的数据准备好了，并且再次收到用户进程的system call，那么它马上就将数据拷贝到用户内存然后返回OK结果。
 所以，对于Nonblocking I/O Model来说，用户进程需要不断主动询问kernel数据准备好了没有，也就是**在kernel准备数据的这段期间，用户进程是活动的，非阻塞的，它不断轮询调用recvfrom等待返回成功结果**。
@@ -40,12 +40,12 @@ linux下，可以通过设置socket使其变为non-blocking。当对一个non-bl
 
 ### - I/O Multiplexing Model
 IO多路复用。这个词可能比较陌生，常听闻Netty的NIO模型等等。首先说说Linux API提供的I/O复用方式：select、poll和epoll。
-|select|poll|epoll|
-|---|---|---|---|
-|操作方式|遍历|遍历|回调|
-|底层实现|数组|数组|哈希表|
-|IO效率|每次调用都进行线性遍历，时间复杂度O(n)|每次调用都进行线性遍历，时间复杂度O(n)|事件通知方式，每当有IO事件就绪，系统注册的回调函数就会被调用，时间复杂度O(1)|
-|最大连接|有上限|无上限|无上限|
+| select | poll | epoll |
+| --- | --- | --- | --- |
+| 操作方式 | 遍历 | 遍历 | 回调 |
+| 底层实现 | 数组 | 数组 | 哈希表 |
+| IO效率|每次调用都进行线性遍历，时间复杂度O(n) | 每次调用都进行线性遍历，时间复杂度O(n) | 事件通知方式，每当有IO事件就绪，系统注册的回调函数就会被调用，时间复杂度O(1) |
+| 最大连接 | 有上限 | 无上限 | 无上限 |
 这种IO方式也被称为event driven IO。它们的好处在于单个process就可以同时处理多个网络连接的IO，基本原理就是select/poll/epoll这个function会不断轮询所负责的所有socket，当某个socket有数据到达了就通知用户进程。流程如图：
 ![I/O Multiplexing](.picture/MultiplexingIO.png)
 当用户进程调用了select，那么整个进程会被block，同时kernel会"监视"select负责的所有socket，当任何一个socket中的数据准备好了，select就会返回。这个时候用户进程再调用read操作，等待kernel将数据拷贝到用户进程。
@@ -83,10 +83,8 @@ IO多路复用。这个词可能比较陌生，常听闻Netty的NIO模型等等�
 
 **Java共支持3种网络编程IO模式：BIO、NIO、AIO**
 ### - 同步、异步、阻塞和非阻塞
-- 同步：执行一个操作后，等待结果，然后再继续执行后续的操作
-- 异步：执行一个操作后，可以去执行其他的操作，然后等待通知再回来执行先前没有执行完的操作
-- 阻塞：进程给CPU传达一个任务，一直等待CPU处理完成，再执行后续操作
-- 非阻塞：进程给CPU传达任务后，继续处理后续的操作，隔段时间回来询问之前的操作是否完成（轮询）
+[见IO & IO模型](#一、IO-&-IO模型)
+
 ### - BIO(Blocking IO)
 同步阻塞模型，一个客户端对应一个处理线程
 ![BIO-02](.picture/BIO-02.png)
@@ -97,5 +95,27 @@ BIO适合用于连接数目较小且固定的架构，这种方式对服务器�
 1. IO代码中的read操作是阻塞的，如果连接不做数据读写会导致线程阻塞，浪费资源
 2. 如果客户端连接很多，会导致服务器线程太多，压力太大
 
+**代码见：**
+```
+com.leo.bio.SocketClient
+com.leo.bio.SocketServer
+```
+
 ### - NIO(Non Blocking IO)
+IO多路复用模型，服务实现模式为一个线程可以处理多个请求（连接），客户端发送的连接请求都会注册到**多路复用器selector**上，多路复用器轮询连接有IO请求就进行处理
+[I/O多路复用底层一般使用Linux API(select, poll, epoll)来实现](#--I/O-Multiplexing-Model)
+![MIO-01](.picture/MIO-01.png)
+**应用场景：**
+NIO方式适用于连接数目多且连接较短（轻操作）的架构，如聊天服务器、弹幕系统、服务间通讯等。编程比较复杂，jdk1.4开始支持
+
+**代码见：**
+```
+com.leo.nio.NIOClient
+com.leo.nio.NIOServer
+```
+**NIO有三大核心组件：Channel(通道)、Buffer(缓冲区)、Selector(选择器)**
+- Channel
+- Buffer
+- Selector
+
 ### - AIO(NIO 2.0)
